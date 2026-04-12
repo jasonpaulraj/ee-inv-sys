@@ -3,8 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ReservationStatus;
-use App\Exceptions\DuplicateReservationException;
-use App\Exceptions\OutOfStockException;
 use App\Http\Resources\ProductResource;
 use App\Http\Resources\ReservationResource;
 use App\Models\Product;
@@ -46,25 +44,18 @@ class ReservationController extends Controller
     {
         $idempotencyKey = $request->header('Idempotency-Key') ?? session()->getId();
         if (!$idempotencyKey) {
-             $idempotencyKey = Str::random(40);
+            $idempotencyKey = Str::random(40);
         }
 
-        try {
-            $reservation = $this->service->reserve(
-                variantId: $variantId,
-                idempotencyKey: $idempotencyKey,
-                userId: auth()->id()
-            );
+        $reservation = $this->service->reserve(
+            variantId: $variantId,
+            idempotencyKey: $idempotencyKey,
+            userId: auth()->id()
+        );
 
-            return (new ReservationResource($reservation))
-                ->response()
-                ->setStatusCode(201);
-
-        } catch (OutOfStockException $e) {
-            return response()->json(['message' => 'Out of stock'], 400);
-        } catch (DuplicateReservationException $e) {
-            return response()->json(['message' => $e->getMessage()], 409);
-        }
+        return (new ReservationResource($reservation))
+            ->response()
+            ->setStatusCode(201);
     }
 
     public function confirm(int $id): JsonResponse
@@ -75,7 +66,10 @@ class ReservationController extends Controller
 
         $this->service->confirm($reservation);
 
-        return response()->json(['message' => 'Purchase confirmed']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Purchase confirmed'
+        ], 200);
     }
 
     public function cancel(int $id): JsonResponse
@@ -84,6 +78,9 @@ class ReservationController extends Controller
 
         $this->service->cancel($reservation);
 
-        return response()->json(['message' => 'Reservation cancelled']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Reservation cancelled'
+        ], 200);
     }
 }

@@ -23,7 +23,7 @@ class ReservationService
             $remaining = Redis::decr($redisKey);
             if ($remaining < 0) {
                 Redis::incr($redisKey);
-                throw new OutOfStockException('Item sold out (Fast Reject)');
+                throw new OutOfStockException();
             }
         }
 
@@ -34,7 +34,7 @@ class ReservationService
                 ->first();
 
             if ($existing) {
-                throw new DuplicateReservationException("Session already has an active reservation for this item.");
+                throw new DuplicateReservationException();
             }
 
             $variant = ProductVariant::lockForUpdate()->findOrFail($variantId);
@@ -79,7 +79,7 @@ class ReservationService
                 ->lockForUpdate()
                 ->first();
 
-            if (! $locked) {
+            if (!$locked) {
                 return;
             }
 
@@ -109,12 +109,12 @@ class ReservationService
                 ->lockForUpdate()
                 ->first();
 
-            if (! $locked) {
+            if (!$locked) {
                 return;
             }
 
             $locked->update(['status' => ReservationStatus::CONFIRMED]);
-            
+
             $locked->variant()->decrement('stock_total');
             $locked->variant()->decrement('stock_reserved');
 

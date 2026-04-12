@@ -11,7 +11,7 @@ class TestController extends Controller
     public function index()
     {
         abort_unless(app()->environment('local'), 403, 'Destructive operation forbidden in production.');
-        
+
         $variants = ProductVariant::with('product')->orderBy('product_id')->get();
 
         return view('test', compact('variants'));
@@ -40,6 +40,9 @@ class TestController extends Controller
 
         Artisan::call('migrate:fresh', ['--seed' => true, '--force' => true]);
 
-        return response()->json(['message' => 'Database reset and reseeded']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Database reset and reseeded'
+        ], 200);
     }
 }

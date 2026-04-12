@@ -25,9 +25,9 @@ class ReservationTest extends TestCase
         $product = Product::create(['name' => 'Test Product', 'description' => null]);
 
         return $product->variants()->create([
-            'name'           => 'Default / Black',
-            'price'          => $price,
-            'stock_total'    => $stock,
+            'name' => 'Default / Black',
+            'price' => $price,
+            'stock_total' => $stock,
             'stock_reserved' => 0,
         ]);
     }
@@ -40,8 +40,8 @@ class ReservationTest extends TestCase
 
         return Reservation::create([
             'product_variant_id' => $variant->id,
-            'status'          => $status,
-            'expires_at'      => $expiresAt ?? now()->addMinutes(2),
+            'status' => $status,
+            'expires_at' => $expiresAt ?? now()->addMinutes(2),
             'idempotency_key' => $idempotencyKey ?? 'test-session-key',
         ]);
     }
@@ -55,7 +55,7 @@ class ReservationTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-                 ->assertJsonStructure(['data' => ['reservation_id', 'variant_name', 'product_name', 'price', 'expires_at']]);
+            ->assertJsonStructure(['data' => ['reservation_id', 'variant_name', 'product_name', 'price', 'expires_at']]);
 
         $this->assertDatabaseHas('reservations', ['product_variant_id' => $variant->id, 'status' => ReservationStatus::ACTIVE->value]);
         $this->assertEquals(1, $variant->fresh()->stock_reserved);
@@ -72,8 +72,8 @@ class ReservationTest extends TestCase
         // Same user hitting reload
         $this->postJson("/api/reserve/{$variant->id}", [], [
             'Idempotency-Key' => 'duplicate-key'
-        ])->assertStatus(409)->assertJson(['message' => 'Session already has an active reservation for this item.']);
-        
+        ])->assertStatus(409)->assertJson(['success' => false, 'message' => 'You already have an active reservation for this item.']);
+
         $this->assertDatabaseCount('reservations', 1);
         $this->assertEquals(1, $variant->fresh()->stock_reserved);
     }
@@ -85,7 +85,7 @@ class ReservationTest extends TestCase
 
         $this->postJson("/api/reserve/{$variant->id}", [], [
             'Idempotency-Key' => 'user-abc'
-        ])->assertStatus(400)->assertJson(['message' => 'Out of stock']);
+        ])->assertStatus(400)->assertJson(['success' => false, 'message' => 'Item sold out.']);
     }
 
     public function test_reserve_returns_404_for_unknown_variant(): void
@@ -95,12 +95,12 @@ class ReservationTest extends TestCase
 
     public function test_confirm_success(): void
     {
-        $variant     = $this->createVariant(5);
+        $variant = $this->createVariant(5);
         $reservation = $this->createReservation($variant, ReservationStatus::ACTIVE, now()->addMinutes(2)->toDateTimeString());
 
         $this->postJson("/api/confirm/{$reservation->id}")
-             ->assertStatus(200)
-             ->assertJson(['message' => 'Purchase confirmed']);
+            ->assertStatus(200)
+            ->assertJson(['success' => true, 'message' => 'Purchase confirmed']);
 
         $this->assertDatabaseHas('reservations', ['id' => $reservation->id, 'status' => ReservationStatus::CONFIRMED->value]);
 
@@ -111,12 +111,12 @@ class ReservationTest extends TestCase
 
     public function test_cancel_success(): void
     {
-        $variant     = $this->createVariant();
+        $variant = $this->createVariant();
         $reservation = $this->createReservation($variant);
 
         $this->postJson("/api/cancel/{$reservation->id}")
-             ->assertStatus(200)
-             ->assertJson(['message' => 'Reservation cancelled']);
+            ->assertStatus(200)
+            ->assertJson(['success' => true, 'message' => 'Reservation cancelled']);
 
         $this->assertDatabaseHas('reservations', ['id' => $reservation->id, 'status' => ReservationStatus::CANCELLED->value]);
         $this->assertEquals(0, $variant->fresh()->stock_reserved);
@@ -124,7 +124,7 @@ class ReservationTest extends TestCase
 
     public function test_expiry_command_marks_expired_reservations_and_restores_stock(): void
     {
-        $variant     = $this->createVariant();
+        $variant = $this->createVariant();
         $reservation = $this->createReservation($variant, ReservationStatus::ACTIVE, now()->subMinute()->toDateTimeString());
 
         $this->assertEquals(1, $variant->fresh()->stock_reserved);

@@ -14,7 +14,7 @@ class ProductResource extends JsonResource
             'name' => $this->name,
             'description' => $this->description,
             'variants' => $this->whenLoaded('variants', function () {
-                return $this->variants->map(fn ($variant) => [
+                return $this->variants->map(fn($variant) => [
                     'id' => $variant->id,
                     'name' => $variant->name,
                     'price' => (float) $variant->price,

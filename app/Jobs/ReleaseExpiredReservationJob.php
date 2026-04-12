@@ -23,8 +23,7 @@ class ReleaseExpiredReservationJob implements ShouldQueue
     {
         if ($this->reservation->status === ReservationStatus::ACTIVE) {
             $this->reservation->update(['status' => ReservationStatus::EXPIRED]);
-            
-            // Atomically restore the stock
+
             $this->reservation->variant()->decrement('stock_reserved');
 
             \App\Models\StockMovement::create([

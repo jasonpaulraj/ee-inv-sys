@@ -17,10 +17,10 @@ class CatalogController extends Controller
         $search = $request->input('search');
 
         $query = Product::with('variants')->orderBy('name');
-        
+
         if ($search) {
             $query->where('name', 'like', '%' . $search . '%')
-                  ->orWhere('description', 'like', '%' . $search . '%');
+                ->orWhere('description', 'like', '%' . $search . '%');
         }
 
         $products = $query->paginate($perPage)->appends($request->query());

@@ -98,7 +98,7 @@ Next waiter acquires lock → DB transaction → stock = 0 → 400 Out of stock
 ## Running Tests
 
 ```bash
-php artisan test tests/Feature/ReservationTest.php
+docker-compose exec app php artisan test
 ```
 
 Tests cover: reserve success, out-of-stock rejection, confirmed-stock consumption, confirm with expiry guard, cancel, expiry command, and sequential concurrency simulation.

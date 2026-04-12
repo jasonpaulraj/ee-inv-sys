@@ -11,7 +11,7 @@ use Illuminate\Console\Command;
 class ExpireReservations extends Command
 {
     protected $signature = 'reservations:expire';
-    protected $description = 'Release expired reservations (Fallback Cleanup)';
+    protected $description = 'Release expired reservations';
 
     public function handle()
     {
