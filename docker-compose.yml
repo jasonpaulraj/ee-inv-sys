@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: app
+    volumes:
+      - .:/var/www/html
+    ports:
+      - "8080:8000"
+    depends_on:
+      - mysql
+      - redis
+
+  mysql:
+    image: mysql:8
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: inventory_db
+      MYSQL_USER: inventory_user
+      MYSQL_PASSWORD: secret
+    ports:
+      - "3307:3306"
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: phpmyadmin
+    restart: always
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: inventory_user
+      PMA_PASSWORD: secret
+    depends_on:
+      - mysql
+
+  worker:
+    build: .
+    container_name: worker
+    command: php artisan queue:work --sleep=3 --tries=3
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - mysql
+      - redis
