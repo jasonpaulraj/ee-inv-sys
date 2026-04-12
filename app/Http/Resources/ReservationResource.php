@@ -9,11 +9,14 @@ class ReservationResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $variant = $this->variant;
+        $product = $variant?->product;
+
         return [
             'reservation_id' => $this->id,
-            'variant_name' => $this->variant->name ?? null,
-            'product_name' => $this->variant->product->name ?? null,
-            'price' => (float) ($this->variant->price ?? 0),
+            'variant_name' => $variant?->name,
+            'product_name' => $product?->name,
+            'price' => (float) ($variant?->price ?? 0),
             'expires_at' => $this->expires_at,
         ];
     }

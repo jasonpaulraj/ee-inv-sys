@@ -58,6 +58,14 @@ class ReservationController extends Controller
             ->setStatusCode(201);
     }
 
+    /**
+     * Confirm a reservation, completing the purchase.
+     *
+     * The controller performs an early 404 when the reservation is not found or
+     * has already expired (expires_at check).  The service then re-checks under
+     * a row-level lock to handle the narrow race window between this read and the
+     * lock acquisition — returning 422 if the state changed in that interval.
+     */
     public function confirm(int $id): JsonResponse
     {
         $reservation = Reservation::where('status', ReservationStatus::ACTIVE)
@@ -68,19 +76,26 @@ class ReservationController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Purchase confirmed'
+            'message' => 'Purchase confirmed',
         ], 200);
     }
 
+    /**
+     * Cancel an active reservation, immediately restoring available stock.
+     *
+     * The status filter is intentionally omitted here so the controller always
+     * finds the resource and returns a meaningful 422 (via ReservationNotActionableException)
+     * rather than a generic 404 when the reservation exists but is not cancellable.
+     */
     public function cancel(int $id): JsonResponse
     {
-        $reservation = Reservation::where('status', ReservationStatus::ACTIVE)->findOrFail($id);
+        $reservation = Reservation::findOrFail($id);
 
         $this->service->cancel($reservation);
 
         return response()->json([
             'success' => true,
-            'message' => 'Reservation cancelled'
+            'message' => 'Reservation cancelled',
         ], 200);
     }
 }

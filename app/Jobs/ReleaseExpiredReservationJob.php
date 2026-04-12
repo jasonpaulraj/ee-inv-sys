@@ -2,14 +2,17 @@
 
 namespace App\Jobs;
 
-use App\Models\Reservation;
 use App\Enums\ReservationStatus;
 use App\Enums\StockMovementAction;
+use App\Models\Reservation;
+use App\Models\StockMovement;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class ReleaseExpiredReservationJob implements ShouldQueue
 {
@@ -19,20 +22,44 @@ class ReleaseExpiredReservationJob implements ShouldQueue
     {
     }
 
+    /**
+     * Release an expired reservation and restore the variant's stock.
+     *
+     * The three writes (status update, stock decrement, stock movement) are wrapped
+     * in a single transaction so a crash mid-way cannot leave stock_reserved
+     * permanently decremented without the reservation being marked expired.
+     *
+     * A row-level lockForUpdate() re-fetches the reservation inside the transaction
+     * to prevent a double-release race with the `reservations:expire` artisan command
+     * — whichever process wins the lock will act; the other will see a non-ACTIVE
+     * status and exit safely.
+     */
     public function handle(): void
     {
-        if ($this->reservation->status === ReservationStatus::ACTIVE) {
-            $this->reservation->update(['status' => ReservationStatus::EXPIRED]);
+        DB::transaction(function () {
+            $locked = Reservation::where('id', $this->reservation->id)
+                ->where('status', ReservationStatus::ACTIVE)
+                ->lockForUpdate()
+                ->first();
 
-            $this->reservation->variant()->decrement('stock_reserved');
+            // Another process (artisan command or duplicate job) already handled this.
+            if (!$locked) {
+                return;
+            }
 
-            \App\Models\StockMovement::create([
-                'product_variant_id' => $this->reservation->product_variant_id,
+            $locked->update(['status' => ReservationStatus::EXPIRED]);
+
+            $locked->variant()->decrement('stock_reserved');
+
+            StockMovement::create([
+                'product_variant_id' => $locked->product_variant_id,
                 'action' => StockMovementAction::EXPIRED,
                 'quantity' => 1,
                 'reference_type' => Reservation::class,
-                'reference_id' => $this->reservation->id,
+                'reference_id' => $locked->id,
             ]);
-        }
+
+            Cache::forget('full_catalog');
+        });
     }
 }

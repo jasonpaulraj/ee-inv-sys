@@ -13,8 +13,8 @@ class VariantResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'price' => (float) $this->price,
-            'stock' => $this->stock,
-            'available' => max(0, $this->stock - ($this->reserved_count ?? 0)),
+            'stock' => $this->stock_total,
+            'available' => $this->stock_available,
         ];
     }
 }
