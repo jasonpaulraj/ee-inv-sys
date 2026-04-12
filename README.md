@@ -2,17 +2,13 @@
 
 Preventing overselling in high-concurrency flash sale systems.
 
-**Stack:** Laravel 12 · MySQL 8 · Redis · Docker · Blade
-
 ---
 
 ## Setup
 
 ```bash
 docker-compose up -d
-docker exec -it app composer install
-docker exec -it app php artisan key:generate
-docker exec -it app php artisan migrate --seed
+docker-compose exec app php artisan migrate --seed
 ```
 
 Open [http://localhost:8080](http://localhost:8080)
@@ -21,11 +17,11 @@ Open [http://localhost:8080](http://localhost:8080)
 
 ## API
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
+| Method | Endpoint            | Description            |
+| ------ | ------------------- | ---------------------- |
 | `POST` | `/api/reserve/{id}` | Reserve inventory item |
-| `POST` | `/api/confirm/{id}` | Confirm a reservation |
-| `POST` | `/api/cancel/{id}` | Cancel a reservation |
+| `POST` | `/api/confirm/{id}` | Confirm a reservation  |
+| `POST` | `/api/cancel/{id}`  | Cancel a reservation   |
 
 ### Stock Formula
 

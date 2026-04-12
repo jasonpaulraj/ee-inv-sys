@@ -1,11 +1,10 @@
-version: '3.8'
-
 services:
   app:
     build: .
     container_name: app
     volumes:
       - .:/var/www/html
+      - /var/www/html/vendor
     ports:
       - "8080:8000"
     depends_on:
@@ -49,6 +48,7 @@ services:
     command: php artisan queue:work --sleep=3 --tries=3
     volumes:
       - .:/var/www/html
+      - /var/www/html/vendor
     depends_on:
       - mysql
       - redis
