@@ -45,7 +45,7 @@ services:
   worker:
     build: .
     container_name: worker
-    command: php artisan horizon
+    command: ["php", "artisan", "horizon"]
     volumes:
       - .:/var/www/html
       - /var/www/html/vendor

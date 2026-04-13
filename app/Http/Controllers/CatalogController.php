@@ -8,9 +8,6 @@ use Illuminate\View\View;
 
 class CatalogController extends Controller
 {
-    /**
-     * Display the product catalog with search and pagination.
-     */
     public function index(Request $request): View
     {
         $perPage = $request->input('per_page', 10);

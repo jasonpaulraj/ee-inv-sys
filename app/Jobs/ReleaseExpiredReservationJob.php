@@ -22,18 +22,6 @@ class ReleaseExpiredReservationJob implements ShouldQueue
     {
     }
 
-    /**
-     * Release an expired reservation and restore the variant's stock.
-     *
-     * The three writes (status update, stock decrement, stock movement) are wrapped
-     * in a single transaction so a crash mid-way cannot leave stock_reserved
-     * permanently decremented without the reservation being marked expired.
-     *
-     * A row-level lockForUpdate() re-fetches the reservation inside the transaction
-     * to prevent a double-release race with the `reservations:expire` artisan command
-     * — whichever process wins the lock will act; the other will see a non-ACTIVE
-     * status and exit safely.
-     */
     public function handle(): void
     {
         DB::transaction(function () {
@@ -42,7 +30,6 @@ class ReleaseExpiredReservationJob implements ShouldQueue
                 ->lockForUpdate()
                 ->first();
 
-            // Another process (artisan command or duplicate job) already handled this.
             if (!$locked) {
                 return;
             }

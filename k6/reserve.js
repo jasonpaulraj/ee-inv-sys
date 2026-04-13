@@ -24,7 +24,7 @@ export default function () {
         headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
-            "Idempotency-Key": uuidv4(),
+            "Idempotency-Key": "k6-" + uuidv4(),
         },
     };
 
