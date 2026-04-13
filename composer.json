@@ -1,9 +1,9 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "project/ee-inv-sys",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "description": "High-concurrency inventory reservation system with pessimistic locking and Redis.",
+    "keywords": ["laravel", "inventory", "concurrency", "redis", "ecommerce"],
     "license": "MIT",
     "require": {
         "php": "^8.2",
