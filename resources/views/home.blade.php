@@ -58,7 +58,7 @@
                             <button
                                 class="btn-reserve bg-black hover:bg-zinc-800 text-white w-full md:w-auto px-5 py-2 rounded-lg text-sm font-medium transition-colors duration-200 disabled:bg-zinc-300 disabled:cursor-not-allowed"
                                 id="btn-reserve-{{ $product->id }}" data-product-id="{{ $product->id }}">
-                                Reserve
+                                Buy
                             </button>
                         </div>
                     </li>

@@ -1,15 +1,37 @@
 # Inventory Reservation System
 
-## Disclaimer for AI Usage
+## Architecture & Approach
 
-AI tools were used to generate non-critical areas of this project.
+This project is built with a focus on **foundational engineering rigor, scalability, and maintainability**. The architecture is designed to handle a highly concurrent, production-grade retail environment (e.g., Flash Sales) where overselling inventory is mathematically impossible.
 
-This includes:
+### Key Decisions & Design Patterns
 
-- Documentation (README.md)
-- Basic UI scaffolding (Blade templates and frontend JS)
-- Load testing script (k6)
-- Auxiliary scripts (Docker entrypoint, test runner)
+1. **Multi-Tiered Concurrency Defense (Edge Cases Handled):**
+    - **Redis + Lua (First Line):** Atomically gates requests in-memory before they hit the database, deflecting invalid traffic instantly during massive spikes.
+    - **Pessimistic Locking (Source of Truth):** Database-level `SELECT ... FOR UPDATE` locks serialize requests at the row level, ensuring race conditions never occur.
+    - **Idempotency Keys:** Built-in network resilience; retried or duplicated client requests are caught early without double-deducting stock.
+2. **Immutable Ledger Pattern:** `product_variants` provides a fast, transacting snapshot of current stock availability. Meanwhile, `stock_movements` acts as an append-only ledger for every status change (Reserve, Confirm, Cancel), preserving strict historical data for reporting.
+3. **Clean Code & SOLID:** Business logic is stripped from controllers and moved into dedicated services (e.g., `ReservationService`). Controllers handle HTTP transport; services handle pure domain logic.
+4. **Meaningful Error Handling:** Race conditions and logical errors throw highly specific custom Exceptions (e.g., `OutOfStockException`, `DuplicateReservationException`), which map cleanly to appropriate HTTP status codes.
+
+### Tradeoffs & Assumptions
+
+- **Assumption - Heavy Read/Write Asymmetry:** The system assumes read traffic (catalog browsing) vastly outweighs write traffic (purchasing). Therefore, Redis caching is heavily utilized for catalog views to prioritize fast reads, accepting a slower write path due to pessimistic database locking.
+- **Tradeoff - Dual-Write Synchronicity over True Event Sourcing:** For simplicity and ease of review, the `stock_movements` ledger is written synchronously in the same database transaction as the locking update. In a true enterprise setup, this might be offloaded to an asynchronous Outbox Pattern or message bus (e.g., Kafka) to minimize transaction times, but that introduces infrastructural complexity that is overkill here.
+- **Tradeoff - Cache Invalidation Strategy:** The system currently uses `Cache::forget('full_catalog')` upon any stock mutation. While functionally correct, at extreme scale this is an anti-pattern as it can trigger a "cache stampede" where thousands of concurrent users simultaneously hit the database to rebuild the catalog. A production-ready enhancement would utilize asynchronous cache warming or granular cache tags to update only the affected variant.
+
+### Testing Strategy
+
+- **PHPUnit (TDD):** In-memory SQLite tests validate core business logic and edge-case exception handling.
+- **k6 Load Testing:** True network concurrency is verified via a Dockerized `grafana/k6` script, aggressively hammering the API with 500 simultaneous virtual users to confirm lock integrity.
+
+### AI Workflow Disclosure
+
+AI tools were used during the development of this project to accelerate velocity on non-critical parts of the codebase.
+
+Specifically, AI assistance was utilized to generate structural boilerplate, draft initial documentation, scaffold basic Blade templates, and set up the foundation for the load testing script. 
+
+However, all core architectural decisions and complex logic were human-driven. The concurrency implementation, database locking strategies, Lua caching, and the ledger system were deliberately architected and heavily refined by hand to ensure correct operation at scale. Any AI-generated code was treated as a rough first draft and strictly reviewed against SOLID principles and clean code standards before final implementation.
 
 ## Setup
 

@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Enums\ReservationStatus;
 use App\Enums\StockMovementAction;
-use App\Events\ReservationCreated;
 use App\Exceptions\DuplicateReservationException;
 use App\Exceptions\OutOfStockException;
 use App\Exceptions\ReservationNotActionableException;
@@ -89,7 +88,6 @@ class ReservationService
 
                 $reservation->setRelation('variant', $variant->load('product'));
 
-                ReservationCreated::dispatch($reservation);
                 ReleaseExpiredReservationJob::dispatch($reservation)->delay($expiresAt);
 
                 Cache::forget('full_catalog');
