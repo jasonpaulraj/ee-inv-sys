@@ -60,10 +60,6 @@
                         class="text-sm font-medium text-zinc-500 hover:text-zinc-900 transition flex items-center gap-2">
                         Catalog
                     </a>
-                    <a href="{{ route('test.index') }}"
-                        class="text-sm font-medium text-zinc-500 hover:text-zinc-900 transition flex items-center gap-2">
-                        Dev Test
-                    </a>
                 </div>
             </div>
         </div>
